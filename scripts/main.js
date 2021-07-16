@@ -229,47 +229,62 @@ function drawGraph() {
         opacity: 0.9,
         name: 'Поверхность',
         type: 'surface'
-    }
+    }    
 
-    let data = [surface];
+    let xs = [];
+    let ys = [];
+    let zs = [];
+    let cs = [];
+    let ts = []
     rgb = 3;
     for (let i = 0; i < states.length; i++)  {
+        xs.push(states[i].tPower);
+        ys.push(states[i].pressure);
+        zs.push(states[i].tEfficiency);
         rgb += 7;
-        data.push({
-            x: [states[i].tPower], 
-            y: [states[i].pressure], 
-            z: [states[i].tEfficiency], 
-            mode: 'markers',
-            marker: {
-                color: `rgb(${rgb}, ${rgb}, ${rgb})`,
-                size: 12,
-                symbol: 'circle',
-                line: {
-                    color: 'rgb(204, 204, 204)',
-                    width: 1
-                },
-                opacity: 1
-            },
-            name: `Состояние ${i + 1}`,
-            type: 'scatter3d'
-        });
+        cs.push(`rgb(${rgb}, ${rgb}, ${rgb})`);
+        ts.push(`Состояние ${i + 1}`);
     }
+    
+    let marker = {
+        x: xs, 
+        y: ys, 
+        z: zs, 
+        mode: 'markers',
+        marker: {
+            size: 12,
+            symbol: 'circle',
+            line: {
+                color: 'rgb(204, 204, 204)',
+                width: 1
+            },
+            color: cs
+        },
+        name: '',
+        text: ts,
+        type: 'scatter3d'
+    };
 
     let layout = {
+        title: "Эксплуатационная характеристика турбины",
         scene: {
             xaxis:{
-                title: 'X - Мощность турбины, МВт'
+                title: 'X - Мощность турбины, МВт',
+                dtick: x_data[1] - x_data[0]
             },
             yaxis:{
-                title: 'Y - Напор, м'
+                title: 'Y - Напор, м',
+                dtick: y_data[1] - y_data[0]
             },
             zaxis:{
-                title: 'Z - КПД турбины, %'
+                title: 'Z - КПД турбины, %',
+                dtick: 1
             },
         },
         height: 880
     };
 
+    let data = [surface, marker];
     if (states.length === 1) {
         Plotly.newPlot('graph', data, layout, {displayModeBar: false}); 
     }
