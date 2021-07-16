@@ -277,8 +277,7 @@ function drawGraph() {
                 dtick: y_data[1] - y_data[0]
             },
             zaxis:{
-                title: 'Z - КПД турбины, %',
-                dtick: 1
+                title: 'Z - КПД турбины, %'
             },
         },
         height: 880
