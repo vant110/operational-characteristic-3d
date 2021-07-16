@@ -1,23 +1,23 @@
 let x_data;
 let y_data;
 let z_data;
-let states = []
+let states = [];
 
-function State(gPower, pressure) {    
-    this.pressure = pressure;  
-    this.gPower = gPower;  
+function State(gPower, pressure) {
+    this.pressure = pressure;
+    this.gPower = gPower;
     this.gEfficiency = 0.98;
     this.tPower = undefined;
     this.tEfficiency = undefined;
-};
+}
 
-function getCurrState() { 
+function getCurrState() {
     let gPower = Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0];
-    let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0]; 
+    let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
     return new State(gPower, pressure);
 }
 
-function calcZ(x, y) { 
+function calcZ(x, y) {
     function computeZ(weights, values) {
         let eff = 0;
         let sumWeight = 0;
@@ -28,7 +28,7 @@ function calcZ(x, y) {
         return eff / sumWeight;
     }
 
-    function computeWeights(distances) {        
+    function computeWeights(distances) {
         let weights = [];
         for (let i = 0; i < distances.length; i++) {
             weights.push(1 / distances[i]);
@@ -56,15 +56,15 @@ function calcZ(x, y) {
     let dx = hx / 100;
     for (let i = 0; i < x_data.length - 1; i++) {
         if (x <= x_data[i + 1]) {
-            if (x < x_data[i] + dx) {                
+            if (x < x_data[i] + dx) {
                 xMinIdx = i;
                 xMaxIdx = i;
             }
-            else if (x > x_data[i + 1] - dx) {                
+            else if (x > x_data[i + 1] - dx) {
                 xMinIdx = i + 1;
                 xMaxIdx = i + 1;
             }
-            else {                
+            else {
                 xMinIdx = i;
                 xMaxIdx = i + 1;
             }
@@ -119,7 +119,7 @@ function calcZ(x, y) {
             }
             else {
                 // Между 2-мя вертикальными ячейками НЕ на границе.
-                values.push(z_data[yMinIdx][xMinIdx - 1]);            
+                values.push(z_data[yMinIdx][xMinIdx - 1]);
                 values.push(z_data[yMaxIdx][xMinIdx - 1]);
                 values.push(z_data[yMaxIdx][xMinIdx + 1]);
                 values.push(z_data[yMinIdx][xMinIdx + 1]);
@@ -128,8 +128,8 @@ function calcZ(x, y) {
                 distances.push(distances[1]);
                 distances.push(distances[0]);
             }
-        } 
-        else if (yMin === yMax) {        
+        }
+        else if (yMin === yMax) {
             if ((yMin === y_data[0]) || (yMin === y_data[y_data.length - 1])) {
                 // Между 2-мя горизнтальными ячейками на границе.
                 values.push(z_data[yMinIdx][xMinIdx]);
@@ -139,23 +139,23 @@ function calcZ(x, y) {
             }
             else {
                 // Между 2-мя горизнтальными ячейками НЕ на границе.
-                values.push(z_data[yMinIdx - 1][xMinIdx]);            
+                values.push(z_data[yMinIdx - 1][xMinIdx]);
                 values.push(z_data[yMinIdx + 1][xMinIdx]);
                 values.push(z_data[yMinIdx + 1][xMaxIdx]);
                 values.push(z_data[yMinIdx - 1][xMaxIdx]);
                 distances.push(computeHypotenuse(xDown, hy));
-                distances.push(distances[0]);            
+                distances.push(distances[0]);
                 distances.push(computeHypotenuse(xUp, hy));
                 distances.push(distances[2]);
             }
-        } 
+        }
         else {
             // Между 4-мя ячейками.
-            values.push(z_data[yMinIdx][xMinIdx]);            
+            values.push(z_data[yMinIdx][xMinIdx]);
             values.push(z_data[yMaxIdx][xMinIdx]);
             values.push(z_data[yMaxIdx][xMaxIdx]);
             values.push(z_data[yMinIdx][xMaxIdx]);
-            distances.push(computeHypotenuse(xDown, yDown));           
+            distances.push(computeHypotenuse(xDown, yDown));
             distances.push(computeHypotenuse(xDown, yUp));
             distances.push(computeHypotenuse(xUp, yUp));
             distances.push(computeHypotenuse(xUp, yDown));
@@ -177,7 +177,7 @@ function addState() {
     }
 }
 
-function parseCSV(rows){
+function parseCSV(rows) {
     function getX_data(rows) {
         let x_data = [];
         for (let prop in rows[0]) {
@@ -192,7 +192,7 @@ function parseCSV(rows){
     function getY_data(rows) {
         let y_data = [];
         for (let obj of rows) {
-            let y = Number.parseInt(obj[""]); 
+            let y = Number.parseInt(obj[""]);
             y_data.push(y);
         }
         return y_data;
@@ -229,7 +229,7 @@ function drawGraph() {
         opacity: 0.9,
         name: 'Поверхность',
         type: 'surface'
-    }    
+    }
 
     let xs = [];
     let ys = [];
@@ -237,7 +237,7 @@ function drawGraph() {
     let cs = [];
     let ts = []
     rgb = 3;
-    for (let i = 0; i < states.length; i++)  {
+    for (let i = 0; i < states.length; i++) {
         xs.push(states[i].tPower);
         ys.push(states[i].pressure);
         zs.push(states[i].tEfficiency);
@@ -245,11 +245,11 @@ function drawGraph() {
         cs.push(`rgb(${rgb}, ${rgb}, ${rgb})`);
         ts.push(`Состояние ${i + 1}`);
     }
-    
+
     let marker = {
-        x: xs, 
-        y: ys, 
-        z: zs, 
+        x: xs,
+        y: ys,
+        z: zs,
         mode: 'markers',
         marker: {
             size: 12,
@@ -268,15 +268,15 @@ function drawGraph() {
     let layout = {
         title: "Эксплуатационная характеристика турбины",
         scene: {
-            xaxis:{
+            xaxis: {
                 title: 'X - Мощность турбины, МВт',
                 dtick: x_data[1] - x_data[0]
             },
-            yaxis:{
+            yaxis: {
                 title: 'Y - Напор, м',
                 dtick: y_data[1] - y_data[0]
             },
-            zaxis:{
+            zaxis: {
                 title: 'Z - КПД турбины, %'
             },
         },
@@ -285,10 +285,10 @@ function drawGraph() {
 
     let data = [surface, marker];
     if (states.length === 1) {
-        Plotly.newPlot('graph', data, layout, {displayModeBar: false}); 
+        Plotly.newPlot('graph', data, layout, { displayModeBar: false });
     }
     else {
-        Plotly.react('graph', data, layout, {displayModeBar: false}); 
+        Plotly.react('graph', data, layout, { displayModeBar: false });
     }
 }
 
