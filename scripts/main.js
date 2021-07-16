@@ -1,7 +1,7 @@
-let x_data; // Массив мощностей турбины.
-let y_data; // Массив напоров.
-let z_data; // Массив КПД турбины.
-let states = []; // Массив состояний гидроагрегата в некоторый момент времени.
+let x_data = []; // Мощности турбины из таблицы.
+let y_data = []; // Напоры из таблицы.
+let z_data = []; // КПД турбины из таблицы.
+let states = []; // Состояния гидроагрегата в некоторый момент времени.
 
 states.add = function (state) {
     states.unshift(state);
@@ -42,7 +42,7 @@ function calcZ(x, y) {
         return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
-    let z;   
+    let z;
     // Значения ближайших опорных точек.
     let xMin;
     let xMax;
@@ -171,54 +171,39 @@ function calcZ(x, y) {
 }
 
 // Формируем текущее состояние гидроагрегата.
-function getCurrState() {  
+function getCurrState() {
     // Получаем входные данные от контроллера.  
     let gPower = Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0];
     let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
 
-    let state = new State(gPower, pressure);    
+    let state = new State(gPower, pressure);
     state.tPower = state.gPower / state.gEfficiency;
     state.tEfficiency = calcZ(state.tPower, state.pressure);
     return state;
 }
 
-// Колбэк-функция для "Plotly.d3.csv()".
-function initXYZ(rows) {
-    function getX_data(rows) {
-        let x_data = [];
-        for (let prop in rows[0]) {
-            let x = Number.parseInt(prop);
-            if (!Number.isNaN(x)) {
-                x_data.push(x);
-            }
-        }
-        return x_data;
+// Колбэк-функция для "Papa.parse()".
+function initXYZ(results) {
+    function getFloat(string) {
+        return Number.parseFloat(string.replace(',', '.'));
     }
 
-    function getY_data(rows) {
-        let y_data = [];
-        for (let obj of rows) {
-            let y = Number.parseInt(obj[""]);
-            y_data.push(y);
-        }
-        return y_data;
+    // Инициализируем массив x_data.
+    for (let i = 1; i < results.data[0].length; i++) {
+        x_data.push(getFloat(results.data[0][i]));
     }
-
-    function getZ_data(rows, x_data) {
-        let z_data = [];
-        for (let obj of rows) {
-            let arr = [];
-            for (let x of x_data) {
-                arr.push(obj[x]);
-            }
-            z_data.push(arr);
-        }
-        return z_data;
+    // Инициализируем массив y_data.
+    for (let i = 1; i < results.data.length; i++) {
+        y_data.push(getFloat(results.data[i][0]));
     }
-
-    x_data = getX_data(rows);
-    y_data = getY_data(rows);
-    z_data = getZ_data(rows, x_data);
+    // Инициализируем массив z_data.
+    for (let i = 1; i < results.data.length; i++) {
+        let arr = [];
+        for (let j = 1; j < results.data[i].length; j++) {
+            arr.push(getFloat(results.data[i][j]));
+        }
+        z_data.push(arr);
+    }
 }
 
 function drawGraph() {
@@ -232,8 +217,9 @@ function drawGraph() {
             ['0.01', `rgb(${rgb},${rgb},0)`],
             ['1.0', `rgb(0,${rgb},0)`]
         ],
+        showscale: false,
         opacity: 0.9,
-        name: 'Поверхность',
+        name: '',
         type: 'surface'
     }
     let data = [surface];
@@ -276,21 +262,30 @@ function drawGraph() {
     }
 
     let layout = {
-        title: "Эксплуатационная характеристика турбины",
+        //title: "Эксплуатационная характеристика турбины",
         scene: {
             xaxis: {
                 title: 'X - Мощность турбины, МВт',
-                dtick: x_data[1] - x_data[0]
+                dtick: x_data[1] - x_data[0],
+                ticks: "outside"
             },
             yaxis: {
                 title: 'Y - Напор, м',
-                dtick: y_data[1] - y_data[0]
+                dtick: y_data[1] - y_data[0],
+                ticks: "outside"
             },
             zaxis: {
-                title: 'Z - КПД турбины, %'
-            },
+                title: 'Z - КПД турбины, %',
+                ticks: "outside"
+            }
         },
-        height: 880
+        height: window.innerHeight,
+        margin: {
+            l: 0,
+            r: 0,
+            t: 0,
+            b: 0
+        }
     };
 
     if (states.length === 0) {
@@ -301,11 +296,15 @@ function drawGraph() {
     }
 }
 
-Plotly.d3.csv('data/operational-characteristic.csv', initXYZ);
-setTimeout(() => {
-    states.add(getCurrState());
-    drawGraph();    
-}, 0);
+Papa.parse('../data/operational-characteristic.csv', {
+    download: true,
+    skipEmptyLines: 'greedy',
+    complete: (results) => {
+        initXYZ(results);
+        states.add(getCurrState());
+        drawGraph();
+    }
+});
 let intervalID = setInterval(() => {
     states.add(getCurrState());
     drawGraph();

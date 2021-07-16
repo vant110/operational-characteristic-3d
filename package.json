@@ -1,0 +1,24 @@
+{
+  "name": "operational-characteristic-3d",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vant110/operational-characteristic-3d.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vant110/operational-characteristic-3d/issues"
+  },
+  "homepage": "https://github.com/vant110/operational-characteristic-3d#readme",
+  "dependencies": {
+    "papaparse": "^5.3.1",
+    "plotly.js-dist-min": "^2.2.1",
+    "reseter.css": "^1.2.0"
+  }
+}
