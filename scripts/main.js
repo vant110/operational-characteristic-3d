@@ -1,31 +1,33 @@
-let x_data;
-let y_data;
-let z_data;
-let states = [];
+let x_data; // Массив мощностей турбины.
+let y_data; // Массив напоров.
+let z_data; // Массив КПД турбины.
+let states = []; // Массив состояний гидроагрегата в некоторый момент времени.
+
+states.add = function (state) {
+    states.unshift(state);
+    if (states.length === 37) {
+        states.pop();
+    }
+}
 
 function State(gPower, pressure) {
-    this.pressure = pressure;
-    this.gPower = gPower;
-    this.gEfficiency = 0.98;
-    this.tPower = undefined;
-    this.tEfficiency = undefined;
+    this.pressure = pressure; // Напор.
+    this.gPower = gPower; // Мощность генератора.
+    this.gEfficiency = 0.98; // КПД генератора.
+    this.tPower = undefined; // Мощность турбины.
+    this.tEfficiency = undefined; // КПД турбины.
 }
 
-function getCurrState() {
-    let gPower = Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0];
-    let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
-    return new State(gPower, pressure);
-}
-
+// Определяем КПД турбины методом обратных взвешенных расстояний.
 function calcZ(x, y) {
-    function computeZ(weights, values) {
-        let eff = 0;
+    function computeZ(weights, zs) {
+        let z = 0;
         let sumWeight = 0;
         for (let i = 0; i < weights.length; i++) {
-            eff += weights[i] * values[i];
+            z += weights[i] * zs[i];
             sumWeight += weights[i];
         }
-        return eff / sumWeight;
+        return z / sumWeight;
     }
 
     function computeWeights(distances) {
@@ -40,12 +42,13 @@ function calcZ(x, y) {
         return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
-    let z;
+    let z;   
+    // Значения ближайших опорных точек.
     let xMin;
     let xMax;
     let yMin;
     let yMax;
-
+    // Индексы ближайших опорных точек.
     let xMinIdx;
     let xMaxIdx;
     let yMinIdx;
@@ -96,33 +99,34 @@ function calcZ(x, y) {
         }
     }
 
+    // Катеты, используемые для рассчета гипотенуз (расстояний до опорных точек).
     let xDown = x - xMin;
     let xUp = xMax - x;
     let yDown = y - yMin;
     let yUp = yMax - y;
 
-    let distances = [];
-    let values = [];
+    let distances = []; // Расстояния до опорных точек.
+    let zs = []; // Значения опорных точек.
 
     if ((xMin === xMax) && (yMin === yMax)) {
-        // Совпало с ячейкой таблицы.
+        // Совпало с опорной точкой.
         z = z_data[yMinIdx][xMinIdx];
     }
     else {
         if (xMin === xMax) {
             if ((xMin === x_data[0]) || (xMin === x_data[x_data.length - 1])) {
-                // Между 2-мя вертикальными ячейками на границе.            
-                values.push(z_data[yMinIdx][xMinIdx]);
-                values.push(z_data[yMaxIdx][xMinIdx]);
+                // Между 2-мя вертикальными опорными точками на границе.            
+                zs.push(z_data[yMinIdx][xMinIdx]);
+                zs.push(z_data[yMaxIdx][xMinIdx]);
                 distances.push(yDown);
                 distances.push(yUp);
             }
             else {
-                // Между 2-мя вертикальными ячейками НЕ на границе.
-                values.push(z_data[yMinIdx][xMinIdx - 1]);
-                values.push(z_data[yMaxIdx][xMinIdx - 1]);
-                values.push(z_data[yMaxIdx][xMinIdx + 1]);
-                values.push(z_data[yMinIdx][xMinIdx + 1]);
+                // Между 2-мя вертикальными опорными точками НЕ на границе.
+                zs.push(z_data[yMinIdx][xMinIdx - 1]);
+                zs.push(z_data[yMaxIdx][xMinIdx - 1]);
+                zs.push(z_data[yMaxIdx][xMinIdx + 1]);
+                zs.push(z_data[yMinIdx][xMinIdx + 1]);
                 distances.push(computeHypotenuse(hx, yDown));
                 distances.push(computeHypotenuse(hx, yUp));
                 distances.push(distances[1]);
@@ -131,18 +135,18 @@ function calcZ(x, y) {
         }
         else if (yMin === yMax) {
             if ((yMin === y_data[0]) || (yMin === y_data[y_data.length - 1])) {
-                // Между 2-мя горизнтальными ячейками на границе.
-                values.push(z_data[yMinIdx][xMinIdx]);
-                values.push(z_data[yMinIdx][xMaxIdx]);
+                // Между 2-мя горизонтальными опорными точками на границе.
+                zs.push(z_data[yMinIdx][xMinIdx]);
+                zs.push(z_data[yMinIdx][xMaxIdx]);
                 distances.push(xDown);
                 distances.push(xUp);
             }
             else {
-                // Между 2-мя горизнтальными ячейками НЕ на границе.
-                values.push(z_data[yMinIdx - 1][xMinIdx]);
-                values.push(z_data[yMinIdx + 1][xMinIdx]);
-                values.push(z_data[yMinIdx + 1][xMaxIdx]);
-                values.push(z_data[yMinIdx - 1][xMaxIdx]);
+                // Между 2-мя горизонтальными опорными точками НЕ на границе.
+                zs.push(z_data[yMinIdx - 1][xMinIdx]);
+                zs.push(z_data[yMinIdx + 1][xMinIdx]);
+                zs.push(z_data[yMinIdx + 1][xMaxIdx]);
+                zs.push(z_data[yMinIdx - 1][xMaxIdx]);
                 distances.push(computeHypotenuse(xDown, hy));
                 distances.push(distances[0]);
                 distances.push(computeHypotenuse(xUp, hy));
@@ -150,34 +154,36 @@ function calcZ(x, y) {
             }
         }
         else {
-            // Между 4-мя ячейками.
-            values.push(z_data[yMinIdx][xMinIdx]);
-            values.push(z_data[yMaxIdx][xMinIdx]);
-            values.push(z_data[yMaxIdx][xMaxIdx]);
-            values.push(z_data[yMinIdx][xMaxIdx]);
+            // Между 4-мя опорными точками.
+            zs.push(z_data[yMinIdx][xMinIdx]);
+            zs.push(z_data[yMaxIdx][xMinIdx]);
+            zs.push(z_data[yMaxIdx][xMaxIdx]);
+            zs.push(z_data[yMinIdx][xMaxIdx]);
             distances.push(computeHypotenuse(xDown, yDown));
             distances.push(computeHypotenuse(xDown, yUp));
             distances.push(computeHypotenuse(xUp, yUp));
             distances.push(computeHypotenuse(xUp, yDown));
         }
-        z = computeZ(computeWeights(distances), values);
+        z = computeZ(computeWeights(distances), zs);
     }
 
     return z;
 }
 
-function addState() {
-    let state = getCurrState();
+// Формируем текущее состояние гидроагрегата.
+function getCurrState() {  
+    // Получаем входные данные от контроллера.  
+    let gPower = Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0];
+    let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
+
+    let state = new State(gPower, pressure);    
     state.tPower = state.gPower / state.gEfficiency;
     state.tEfficiency = calcZ(state.tPower, state.pressure);
-
-    states.unshift(state);
-    if (states.length === 37) {
-        states.pop();
-    }
+    return state;
 }
 
-function parseCSV(rows) {
+// Колбэк-функция для "Plotly.d3.csv()".
+function initXYZ(rows) {
     function getX_data(rows) {
         let x_data = [];
         for (let prop in rows[0]) {
@@ -230,40 +236,44 @@ function drawGraph() {
         name: 'Поверхность',
         type: 'surface'
     }
+    let data = [surface];
 
-    let xs = [];
-    let ys = [];
-    let zs = [];
-    let cs = [];
-    let ts = []
-    rgb = 3;
-    for (let i = 0; i < states.length; i++) {
-        xs.push(states[i].tPower);
-        ys.push(states[i].pressure);
-        zs.push(states[i].tEfficiency);
-        rgb += 7;
-        cs.push(`rgb(${rgb}, ${rgb}, ${rgb})`);
-        ts.push(`Состояние ${i + 1}`);
-    }
+    if (states.length !== 0) {
+        let xs = [];
+        let ys = [];
+        let zs = [];
+        let colores = [];
+        let texts = [];
+        rgb = 3;
+        for (let i = 0; i < states.length; i++) {
+            xs.push(states[i].tPower);
+            ys.push(states[i].pressure);
+            zs.push(states[i].tEfficiency);
+            rgb += 7;
+            colores.push(`rgb(${rgb}, ${rgb}, ${rgb})`);
+            texts.push(`Состояние ${i + 1}`);
+        }
 
-    let marker = {
-        x: xs,
-        y: ys,
-        z: zs,
-        mode: 'markers',
-        marker: {
-            size: 12,
-            symbol: 'circle',
-            line: {
-                color: 'rgb(204, 204, 204)',
-                width: 1
+        let marker = {
+            x: xs,
+            y: ys,
+            z: zs,
+            mode: 'markers',
+            marker: {
+                size: 12,
+                symbol: 'circle',
+                line: {
+                    color: 'rgb(204, 204, 204)',
+                    width: 1
+                },
+                color: colores
             },
-            color: cs
-        },
-        name: '',
-        text: ts,
-        type: 'scatter3d'
-    };
+            name: '',
+            text: texts,
+            type: 'scatter3d'
+        };
+        data.push(marker);
+    }
 
     let layout = {
         title: "Эксплуатационная характеристика турбины",
@@ -283,8 +293,7 @@ function drawGraph() {
         height: 880
     };
 
-    let data = [surface, marker];
-    if (states.length === 1) {
+    if (states.length === 0) {
         Plotly.newPlot('graph', data, layout, { displayModeBar: false });
     }
     else {
@@ -292,9 +301,13 @@ function drawGraph() {
     }
 }
 
-Plotly.d3.csv('data/mainskaya-hpp.csv', parseCSV);
+Plotly.d3.csv('data/mainskaya-hpp.csv', initXYZ);
+setTimeout(() => {
+    states.add(getCurrState());
+    drawGraph();    
+}, 0);
 let intervalID = setInterval(() => {
-    addState();
+    states.add(getCurrState());
     drawGraph();
     if (states.length === 36) {
         clearInterval(intervalID);
