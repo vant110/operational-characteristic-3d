@@ -301,7 +301,7 @@ function drawGraph() {
     }
 }
 
-Plotly.d3.csv('data/mainskaya-hpp.csv', initXYZ);
+Plotly.d3.csv('data/operational-characteristic.csv', initXYZ);
 setTimeout(() => {
     states.add(getCurrState());
     drawGraph();    
