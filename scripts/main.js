@@ -20,14 +20,42 @@ function State(gPower, pressure) {
 
 // Определяем КПД турбины методом обратных взвешенных расстояний.
 function calcZ(x, y) {
-    function computeZ(weights, zs) {
-        let z = 0;
-        let sumWeight = 0;
-        for (let i = 0; i < weights.length; i++) {
-            z += weights[i] * zs[i];
-            sumWeight += weights[i];
+    function bSearchIndices(value, arr) {
+        let minIdx;
+        let maxIdx;
+        let dv = (arr[1] - arr[0]) / 100;        
+        function bSearchRecurs(leftIdx, rightIdx) {
+            if (rightIdx - leftIdx > 1) {
+                let middleIdx = leftIdx + ((rightIdx - leftIdx) >> 1);
+                if (value <= arr[middleIdx]) {
+                    bSearchRecurs(leftIdx, middleIdx);
+                }
+                else {
+                    bSearchRecurs(middleIdx, rightIdx);
+                }
+            }
+            else {
+                if (value < arr[leftIdx] + dv) {
+                    minIdx = leftIdx;
+                    maxIdx = leftIdx;
+                }
+                else if (value > arr[rightIdx] - dv) {
+                    minIdx = rightIdx;
+                    maxIdx = rightIdx;
+                }
+                else {
+                    minIdx = leftIdx;
+                    maxIdx = rightIdx;
+                }
+            }
         }
-        return z / sumWeight;
+        
+        bSearchRecurs(0, arr.length - 1);
+        return [minIdx, maxIdx];
+    }
+
+    function computeHypotenuse(x, y) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
     function computeWeights(distances) {
@@ -38,73 +66,31 @@ function calcZ(x, y) {
         return weights;
     }
 
-    function computeHypotenuse(x, y) {
-        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    function computeZ(weights, zs) {
+        let z = 0;
+        let sumWeight = 0;
+        for (let i = 0; i < weights.length; i++) {
+            z += weights[i] * zs[i];
+            sumWeight += weights[i];
+        }
+        return z / sumWeight;
     }
 
     let z;
-    // Значения ближайших опорных точек.
-    let xMin;
-    let xMax;
-    let yMin;
-    let yMax;
     // Индексы ближайших опорных точек.
-    let xMinIdx;
-    let xMaxIdx;
-    let yMinIdx;
-    let yMaxIdx;
-
-    // Находим xMin и xMax.
-    let hx = x_data[1] - x_data[0];
-    let dx = hx / 100;
-    for (let i = 0; i < x_data.length - 1; i++) {
-        if (x <= x_data[i + 1]) {
-            if (x < x_data[i] + dx) {
-                xMinIdx = i;
-                xMaxIdx = i;
-            }
-            else if (x > x_data[i + 1] - dx) {
-                xMinIdx = i + 1;
-                xMaxIdx = i + 1;
-            }
-            else {
-                xMinIdx = i;
-                xMaxIdx = i + 1;
-            }
-            xMin = x_data[xMinIdx];
-            xMax = x_data[xMaxIdx];
-            break;
-        }
-    }
-    // Находим yMin и yMax.
-    let hy = y_data[1] - y_data[0];
-    let dy = hy / 100;
-    for (let i = 0; i < y_data.length - 1; i++) {
-        if (y <= y_data[i + 1]) {
-            if (y < y_data[i] + dy) {
-                yMinIdx = i;
-                yMaxIdx = i;
-            }
-            else if (y > y_data[i + 1] - dy) {
-                yMinIdx = i + 1;
-                yMaxIdx = i + 1;
-            }
-            else {
-                yMinIdx = i;
-                yMaxIdx = i + 1;
-            }
-            yMin = y_data[yMinIdx];
-            yMax = y_data[yMaxIdx];
-            break;
-        }
-    }
-
+    let [xMinIdx, xMaxIdx] = bSearchIndices(x, x_data);
+    let [yMinIdx, yMaxIdx] = bSearchIndices(y, y_data);
+    // Значения ближайших опорных точек.
+    let xMin = x_data[xMinIdx];
+    let xMax = x_data[xMaxIdx];
+    let yMin = y_data[yMinIdx];
+    let yMax = y_data[yMaxIdx];
     // Катеты, используемые для рассчета гипотенуз (расстояний до опорных точек).
     let xDown = x - xMin;
     let xUp = xMax - x;
     let yDown = y - yMin;
     let yUp = yMax - y;
-
+    
     let distances = []; // Расстояния до опорных точек.
     let zs = []; // Значения опорных точек.
 
@@ -127,6 +113,7 @@ function calcZ(x, y) {
                 zs.push(z_data[yMaxIdx][xMinIdx - 1]);
                 zs.push(z_data[yMaxIdx][xMinIdx + 1]);
                 zs.push(z_data[yMinIdx][xMinIdx + 1]);
+                let hx = x_data[1] - x_data[0];
                 distances.push(computeHypotenuse(hx, yDown));
                 distances.push(computeHypotenuse(hx, yUp));
                 distances.push(distances[1]);
@@ -147,6 +134,7 @@ function calcZ(x, y) {
                 zs.push(z_data[yMinIdx + 1][xMinIdx]);
                 zs.push(z_data[yMinIdx + 1][xMaxIdx]);
                 zs.push(z_data[yMinIdx - 1][xMaxIdx]);
+                let hy = y_data[1] - y_data[0];
                 distances.push(computeHypotenuse(xDown, hy));
                 distances.push(distances[0]);
                 distances.push(computeHypotenuse(xUp, hy));
