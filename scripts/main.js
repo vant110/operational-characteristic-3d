@@ -23,7 +23,7 @@ function calcZ(x, y) {
     function bSearchIndices(value, arr) {
         let minIdx;
         let maxIdx;
-        let dv = (arr[1] - arr[0]) / 100;        
+        let dv = (arr[1] - arr[0]) / 15;
         function bSearchRecurs(leftIdx, rightIdx) {
             if (rightIdx - leftIdx > 1) {
                 let middleIdx = leftIdx + ((rightIdx - leftIdx) >> 1);
@@ -49,7 +49,7 @@ function calcZ(x, y) {
                 }
             }
         }
-        
+
         bSearchRecurs(0, arr.length - 1);
         return [minIdx, maxIdx];
     }
@@ -61,7 +61,7 @@ function calcZ(x, y) {
     function computeWeights(distances) {
         let weights = [];
         for (let i = 0; i < distances.length; i++) {
-            weights.push(1 / distances[i]);
+            weights.push(Math.pow(distances[i], -1.5));
         }
         return weights;
     }
@@ -85,12 +85,15 @@ function calcZ(x, y) {
     let xMax = x_data[xMaxIdx];
     let yMin = y_data[yMinIdx];
     let yMax = y_data[yMaxIdx];
+
+    let hx = x_data[1] - x_data[0];
+    let hy = y_data[1] - y_data[0];
     // Катеты, используемые для рассчета гипотенуз (расстояний до опорных точек).
-    let xDown = x - xMin;
-    let xUp = xMax - x;
-    let yDown = y - yMin;
-    let yUp = yMax - y;
-    
+    let xDown = (x - xMin) * hy;
+    let xUp = (xMax - x) * hy;
+    let yDown = (y - yMin) * hx;
+    let yUp = (yMax - y) * hx;
+
     let distances = []; // Расстояния до опорных точек.
     let zs = []; // Значения опорных точек.
 
@@ -100,46 +103,18 @@ function calcZ(x, y) {
     }
     else {
         if (xMin === xMax) {
-            if ((xMin === x_data[0]) || (xMin === x_data[x_data.length - 1])) {
-                // Между 2-мя вертикальными опорными точками на границе.            
-                zs.push(z_data[yMinIdx][xMinIdx]);
-                zs.push(z_data[yMaxIdx][xMinIdx]);
-                distances.push(yDown);
-                distances.push(yUp);
-            }
-            else {
-                // Между 2-мя вертикальными опорными точками НЕ на границе.
-                zs.push(z_data[yMinIdx][xMinIdx - 1]);
-                zs.push(z_data[yMaxIdx][xMinIdx - 1]);
-                zs.push(z_data[yMaxIdx][xMinIdx + 1]);
-                zs.push(z_data[yMinIdx][xMinIdx + 1]);
-                let hx = x_data[1] - x_data[0];
-                distances.push(computeHypotenuse(hx, yDown));
-                distances.push(computeHypotenuse(hx, yUp));
-                distances.push(distances[1]);
-                distances.push(distances[0]);
-            }
+            // Между 2-мя вертикальными опорными точками.
+            zs.push(z_data[yMinIdx][xMinIdx]);
+            zs.push(z_data[yMaxIdx][xMinIdx]);
+            distances.push(yDown);
+            distances.push(yUp);
         }
         else if (yMin === yMax) {
-            if ((yMin === y_data[0]) || (yMin === y_data[y_data.length - 1])) {
-                // Между 2-мя горизонтальными опорными точками на границе.
-                zs.push(z_data[yMinIdx][xMinIdx]);
-                zs.push(z_data[yMinIdx][xMaxIdx]);
-                distances.push(xDown);
-                distances.push(xUp);
-            }
-            else {
-                // Между 2-мя горизонтальными опорными точками НЕ на границе.
-                zs.push(z_data[yMinIdx - 1][xMinIdx]);
-                zs.push(z_data[yMinIdx + 1][xMinIdx]);
-                zs.push(z_data[yMinIdx + 1][xMaxIdx]);
-                zs.push(z_data[yMinIdx - 1][xMaxIdx]);
-                let hy = y_data[1] - y_data[0];
-                distances.push(computeHypotenuse(xDown, hy));
-                distances.push(distances[0]);
-                distances.push(computeHypotenuse(xUp, hy));
-                distances.push(distances[2]);
-            }
+            // Между 2-мя горизонтальными опорными точками.
+            zs.push(z_data[yMinIdx][xMinIdx]);
+            zs.push(z_data[yMinIdx][xMaxIdx]);
+            distances.push(xDown);
+            distances.push(xUp);
         }
         else {
             // Между 4-мя опорными точками.
@@ -159,10 +134,10 @@ function calcZ(x, y) {
 }
 
 // Формируем текущее состояние гидроагрегата.
-function getCurrState() {
-    // Получаем входные данные от контроллера.  
-    let gPower = Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0];
-    let pressure = Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
+function getCurrState(x, y) {
+    // Получаем входные данные от контроллера. 
+    let gPower = (x ? x : Math.random() * (x_data[x_data.length - 1] - x_data[0]) + x_data[0]) * 0.98;
+    let pressure = y ? y : Math.random() * (y_data[y_data.length - 1] - y_data[0]) + y_data[0];
 
     let state = new State(gPower, pressure);
     state.tPower = state.gPower / state.gEfficiency;
